@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Header from '../bar/header';
 import Modal from '../task/Modal';
 
@@ -9,59 +9,49 @@ import { TfiPlus } from "react-icons/tfi";
 
 function School() {
 
+  // const filteredTask = response => {
+  //   const search = response.target.value.toLowerCase()
+  //   const filterNames = TaskContent.filter(response => response.Name.toLowerCase().includes(search));
+  //   SetName(filteredTask);
 
-        //EditTodo List
-        
+  // }
 
-        const EditTodo = (id) => {
-          console.log(id);
+//   const Searchdata = (e) => {
+//     console.log(e.target.value);
 
-          return (
-            <div>
-              <input type="text" Name = 'Name'/>
-            </div>
-          )
+//     // if(e.target.value != '') {
+//     //     Setsearchvalue(e.target.value);
+//     //     console.log(searchvalue);
+//     // }
+// }
+
+  let dateObj = new Date();
+  let days = ["Sun", "Mon" , "Tue", "Wed" , "Thu" , "Fri" , "Sat"];
+  
+  let date = dateObj.getDate() + '/' + (dateObj.getMonth()+1) + '/' + dateObj.getFullYear();
+  let day = days[dateObj.getDay()];
+  let time = dateObj.getHours()+ ':' + dateObj.getMinutes();
+      //Popup Modal Data
+      const [dialogModal, setDialogModal] = useState (
+        {
+          modalstatus: false,
+          modalDesc : '',
+          onclick: ''
         }
-        //DeleteTodo List
-        // const DeleteTodo = (id) => {
-        //     const filterTask = TaskContent.filter((e,i) => {
-        //         return e.id !== id
-        //     })
-        //     SetTaskcontent(filterTask);
-        // }
+      )
 
-        const DeleteTodo = (id) => {
-          console.log(id);
-          SetShowModal(true);
-
-        const filterTask = TaskContent.filter((e,i) => {
-        return e.id !== id
-        })
-
-        SetTaskcontent(filterTask);
-
-          // SetShowModal(true);
-          // SetTaskcontent(pre => {
-          //   const newArray = [...pre]
-          //   return newArray.filter(item => item.id !== id)
-            
-          // })
-          
-        }
-
-        // const HandleDelete = (id) => {
-        //   SetTaskcontent(pre => {
-        //     const newArray = [...TaskContent]
-        //     return newArray.filter(e =>TaskContent.id !== Deleted)
-        //   })
-        //   SetShowModal(false);
-        // }
+      //Popup Modal Data
+      const DeleteTodo = (getData) => {
+          //console.log(getData);
+          setDialogModal({modalstatus: true, modalDesc: getData, onclick: ()=> {DeleteTask(getData.id)}})
+      }
 
         //Confirm DeleteTask
 
-        const DeleteTask = (id) => {
+        const DeleteTask = (modalData) => {
+          // console.log(modalData);
           const filterTask = TaskContent.filter((e,i) => {
-            return e.id !== id
+            return e.id !== modalData.id
             })
     
             SetTaskcontent(filterTask);
@@ -100,29 +90,94 @@ function School() {
     // const [Open, SetOpen] = useState(false);
     const [Count, SetCount] = useState(1);
     const [TaskContent, SetTaskcontent] = useState(SaveData());
-    const [ShowModal, SetShowModal] = useState(false);
-    // const nameRef = useRef();
+    const [buttonText, SetbuttonText] = useState("Add");
+    const addInputRef = useRef();
+    const scrolltoinput = useRef();
+    let idCounter = 1;
+        //EditTodo List
+          const EditTodo = (dataValue) => {
 
-    //function
+            SetbuttonText("Edit");
+
+            console.log(dataValue);
+
+            addInputRef.current.id = dataValue.id;
+            addInputRef.current.value = dataValue.Name;
+
+            
+
+            SetName(dataValue.Name);
+            addInputRef.current.focus();
+            // console.log(addeditid,addeditName);
+            scrolltoinput.current?.scrollIntoView(
+              {
+                top: 0,
+                behaviour: "smooth"
+              }
+            )
+
+          }
+
+    //Add function
     const Task_submit = (e) => {
-      
-        e.preventDefault(e);
+      let addeditid = addInputRef.current.id;
+      let addeditName = addInputRef.current.value;
+      // console.log(addeditid,addeditName);
+
+      e.preventDefault(e);
+        
+      addeditid ? edit() : add();
+
+    }
+
+    function edit() {
+      let addeditid = addInputRef.current.id;
+      let addeditName =addInputRef.current.value;
+
+      SetbuttonText("Add");
+
+
+      if(Name !='') {        
+        let result = TaskContent.map( (response) => response.id == addeditid ?
+        {
+          ...response,
+          Name: addeditName,
+          id: response.id,
+          parent_id: "p1",
+          date: date,
+          day: day,
+          time: time,
+        }
+        : response )
+
+        SetTaskcontent(result);
+        SetName('');
+      }
+    }
+
+    function add() {
         SetCount (Count + 1);
-        if(Name !== '') {
+        // if(Name !== '') {
+          if(Name != '') {
           
             let TaskView = {
                 id : Number(TaskContent.length+1),
+                parent_id : "p1",
                 Name,
                 checked : false,
                 count : Count,
+                day: day,
+                time: time,
+                date : date,
             }
             console.log(TaskView);
             SetTaskcontent([...TaskContent,TaskView]);
             SetName('');
-            // nameRef.current.value = "";
             
-        }
+            // nameRef.current.value = "";
+        
       }
+    }
 
         //Save data localStorage
         useEffect(() => {
@@ -137,7 +192,7 @@ function School() {
     <>
     <Header />
 
-    <div className='view_data'>
+    <div className='view_data' ref={scrolltoinput}>
 
     <section className='list_data'>
       <div className='auto_scroll'>
@@ -155,7 +210,7 @@ function School() {
                   </div>
               </div>
 
-            <div className='add_task'>
+            <div className='add_task' >
               <div className='task_plus'>
                 <span className='circle_first'>
                   <TfiPlus className='plus_sign' />
@@ -164,14 +219,16 @@ function School() {
                         type= 'text'
                         placeholder='Add a Task'
                         value={Name}
+                        id=''
                         className='input_file'
                         onChange={(e) => {SetName(e.target.value)}}
                         // onClick={()=> SetOpen(!Open)}
                         // onClick={() => SubmitEvents()}
+                        ref = {addInputRef}
                         required
                   />
                   {/* <button className={`submit ${Open ? "block" : "hidden"}`} onClick={Task_submit}>Add</button> */}
-                  <button className='submit' onClick={Task_submit}>Add</button>
+                  <button className='submit' onClick={Task_submit}>{buttonText}</button>
               </div>
             </div>
 
@@ -180,12 +237,12 @@ function School() {
 
             { 
             TaskContent.length > 0 && 
-            <TaskView 
-                    TaskContent={TaskContent} 
-                    DeleteTodo = {DeleteTodo} 
-                    EditTodo = {EditTodo} 
-                    completeHandle = {completeHandle}
-                    DeleteTask = {DeleteTask} />
+                <TaskView 
+                        TaskContent={TaskContent} 
+                        DeleteTodo = {DeleteTodo} 
+                        EditTodo = {EditTodo} 
+                        completeHandle = {completeHandle}
+                />
             }
 
             {
@@ -201,11 +258,18 @@ function School() {
 
     {
 
-ShowModal && (
+dialogModal.modalstatus && (
     <Modal 
-        title={TaskContent.Name}
-        close={SetShowModal}
-        DeleteTodo={TaskContent}
+       modalDesc = {dialogModal.modalDesc}
+       onDelete = {
+        
+        () => {
+                DeleteTask(dialogModal.modalDesc);
+                setDialogModal(!dialogModal.modalstatus);
+              } 
+              }
+              
+       onClose = { () => setDialogModal(!dialogModal.modalstatus) }
     />
 )
 }
